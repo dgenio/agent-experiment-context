@@ -104,12 +104,14 @@ The distinction between **observed** and **applied** allocations makes it possib
 
 A production implementation could carry the same semantics using OpenTelemetry context/baggage and span attributes; this repository deliberately keeps the transport dependency-free so the semantic model remains visible.
 
+A follow-up experiment now tests that hypothesis across real HTTP/process boundaries. See [`docs/otel-http-experiment.md`](docs/otel-http-experiment.md). The core model remains dependency-free; install the optional `otel` extra for that experiment.
+
 ## Run it
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev]'
+pip install -e '.[dev,otel]'
 pytest
 python examples/demo.py
 ```
@@ -136,7 +138,7 @@ Deliberately out of scope for v0.1:
 - cross-experiment interaction detection;
 - experiment conflict resolution;
 - sticky assignment storage;
-- OpenTelemetry wire propagation;
+- production-grade telemetry collection/export;
 - A2A or MCP transport integration;
 - causal analysis;
 - authorization of experiment overrides.
