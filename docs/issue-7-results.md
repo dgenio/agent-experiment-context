@@ -4,7 +4,7 @@
 
 **PASS — no new upstream A2A issue required for this bounded use case.**
 
-The final experiment ran against `a2a-sdk[grpc,http-server]==1.1.2`, the latest A2A Python SDK release available from PyPI in CI at the time of the experiment. CI is green on Python 3.11 and 3.12: Ruff passes and all 12 tests pass on both interpreters.
+The final experiment ran against `a2a-sdk[grpc,http-server]==1.1.2`, the latest A2A Python SDK release available from PyPI in CI at the time of the experiment. CI is green on Python 3.11 and 3.12: Ruff passes and all 13 tests pass on both interpreters.
 
 ## Research question
 
@@ -20,14 +20,16 @@ Can the current A2A extension machinery carry a minimal multi-allocation experim
 - allocation payload stored in `SendMessageRequest.metadata`
 - `RequestContext.requested_extensions` gates decoding
 - `RequestContext.metadata` carries the extension payload to the executor
-- trusted local registry maps only recognized `(experiment_id, treatment)` pairs to behavior
+- trusted local registry maps only recognized `(experiment_id, treatment)` pairs to local behavior
 - wire representation contains only `experiment_id` + `treatment`
+- multiple locally recognized experiments are reported independently; the transport experiment does not invent ordering or last-write-wins precedence between them
 
 ## Evidence
 
 | Scenario | Observed result |
 | --- | --- |
 | Two allocations on one call | receiver observes both and materializes only its locally registered experiment |
+| Two locally recognized experiments | both materialize independently; no implicit ordering/last-write-wins behavior is introduced |
 | Blocking + streaming | same allocation semantics in both modes |
 | Metadata without extension activation | inert; default/control behavior remains unchanged |
 | Unknown experiment/treatment | observed but not materialized; default/control remains active |
@@ -39,6 +41,8 @@ Can the current A2A extension machinery carry a minimal multi-allocation experim
 | Second A2A hop | same minimal envelope can be forwarded; each specialist materializes only its locally registered experiment |
 
 The task-continuation result is particularly useful: the carrier tested here is **request-scoped**, not task-persistent. If an allocation is intended to remain active on a later A2A request for the same task, the client must resend it. That observation should not be generalized into a claim that the originating experimentation system must assign per request; it only describes this transport boundary.
+
+The multiple-local-experiment case also prevents the research harness from accidentally defining composition semantics. A component can report several local materializations, but deciding how two experimental interventions interact remains application/experiment semantics rather than an A2A transport rule.
 
 ## Historical finding while falsifying the hypothesis
 
@@ -66,7 +70,7 @@ receiver observes envelope
 trusted local registry
             |
             v
-local materialization only
+local materialization(s)
 ```
 
 Multiple allocations can coexist on one execution, and a shared specialist does not need to understand or materialize allocations owned by other components.
@@ -83,7 +87,7 @@ The experiment also supports the intended proof boundary:
 - that the same extension representation is optimal for every transport/binding;
 - that allocation persistence across task continuations should be automatic;
 - that A2A should standardize experiment-specific fields;
-- that interaction/conflict semantics for multiple experiments are solved.
+- that interaction/conflict/composition semantics for multiple experiments are solved.
 
 ## Upstream decision
 
