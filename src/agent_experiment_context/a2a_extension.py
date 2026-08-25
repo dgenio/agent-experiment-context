@@ -66,7 +66,8 @@ class ExperimentEvidence:
     observed: tuple[ExperimentAllocation, ...]
     materialized: tuple[ExperimentAllocation, ...]
     ignored: tuple[ExperimentAllocation, ...]
-    effective_behavior: str
+    local_behaviors: tuple[tuple[str, str], ...]
+    default_behavior: str
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -76,7 +77,8 @@ class ExperimentEvidence:
                 allocation.to_wire() for allocation in self.materialized
             ],
             "ignored": [allocation.to_wire() for allocation in self.ignored],
-            "effective_behavior": self.effective_behavior,
+            "local_behaviors": dict(self.local_behaviors),
+            "default_behavior": self.default_behavior,
         }
 
 
@@ -85,6 +87,10 @@ class LocalExperimentRegistry:
 
     A wire payload never declares ownership. The receiving component decides which
     experiment identifiers it recognizes and which treatments can materialize.
+
+    Multiple locally recognized experiments are reported independently. This
+    experiment intentionally does not define ordering, precedence, or composition
+    between their local behaviors.
     """
 
     def __init__(
@@ -104,7 +110,7 @@ class LocalExperimentRegistry:
     def evaluate(self, envelope: ExperimentEnvelope) -> ExperimentEvidence:
         materialized: list[ExperimentAllocation] = []
         ignored: list[ExperimentAllocation] = []
-        behavior = self._default_behavior
+        local_behaviors: list[tuple[str, str]] = []
 
         for allocation in envelope.allocations:
             treatments = self._experiments.get(allocation.experiment_id)
@@ -113,14 +119,20 @@ class LocalExperimentRegistry:
                 continue
 
             materialized.append(allocation)
-            behavior = treatments[allocation.treatment]
+            local_behaviors.append(
+                (
+                    allocation.experiment_id,
+                    treatments[allocation.treatment],
+                )
+            )
 
         return ExperimentEvidence(
             component_id=self.component_id,
             observed=envelope.allocations,
             materialized=tuple(materialized),
             ignored=tuple(ignored),
-            effective_behavior=behavior,
+            local_behaviors=tuple(local_behaviors),
+            default_behavior=self._default_behavior,
         )
 
 
