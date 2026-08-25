@@ -87,4 +87,7 @@ class ExperimentAgentExecutor(AgentExecutor):
             await updater.update_status(TaskState.TASK_STATE_COMPLETED, message=message)
             return
 
-        await updater.update_status(TaskState.TASK_STATE_INPUT_REQUIRED, message=message)
+        await updater.update_status(
+            TaskState.TASK_STATE_INPUT_REQUIRED,
+            message=message,
+        )
