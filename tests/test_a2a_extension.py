@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+from google.protobuf.json_format import MessageToDict
+
 from agent_experiment_context import (
     EXTENSION_URI,
     ExperimentEnvelope,
@@ -7,7 +9,6 @@ from agent_experiment_context import (
     build_request_metadata,
     decode_request_context,
 )
-from google.protobuf.json_format import MessageToDict
 
 
 def _context(*, activated: bool, metadata: dict) -> SimpleNamespace:
