@@ -8,8 +8,9 @@ local concerns.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from a2a.client.client import ClientCallContext
 from a2a.client.service_parameters import (
@@ -46,11 +47,15 @@ class ExperimentEnvelope:
     allocations: tuple[ExperimentAllocation, ...] = ()
 
     @classmethod
-    def from_pairs(cls, *pairs: tuple[str, str]) -> "ExperimentEnvelope":
+    def from_pairs(cls, *pairs: tuple[str, str]) -> ExperimentEnvelope:
         return cls(tuple(ExperimentAllocation(*pair) for pair in pairs))
 
     def to_wire(self) -> dict[str, list[dict[str, str]]]:
-        return {"allocations": [allocation.to_wire() for allocation in self.allocations]}
+        return {
+            "allocations": [
+                allocation.to_wire() for allocation in self.allocations
+            ]
+        }
 
 
 @dataclass(frozen=True, slots=True)
