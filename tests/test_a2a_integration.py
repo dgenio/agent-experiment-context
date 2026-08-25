@@ -233,7 +233,10 @@ async def test_two_allocations_cross_a2a_boundary(streaming: bool) -> None:
                 "treatment": "structured",
             }
         ]
-        assert payload["effective_behavior"] == "structured-response"
+        assert payload["local_behaviors"] == {
+            "specialist-response-mode-v1": "structured-response"
+        }
+        assert payload["default_behavior"] == "control"
     finally:
         await endpoint.close()
 
@@ -261,7 +264,8 @@ async def test_extension_activation_is_required_for_materialization() -> None:
 
         assert payload["observed"] == []
         assert payload["materialized"] == []
-        assert payload["effective_behavior"] == "control"
+        assert payload["local_behaviors"] == {}
+        assert payload["default_behavior"] == "control"
     finally:
         await endpoint.close()
 
@@ -299,7 +303,8 @@ async def test_forged_owner_and_authority_fields_cannot_create_ownership() -> No
         assert payload["ignored"] == [
             {"experiment_id": "not-owned-v1", "treatment": "treatment"}
         ]
-        assert payload["effective_behavior"] == "control"
+        assert payload["local_behaviors"] == {}
+        assert payload["default_behavior"] == "control"
     finally:
         await endpoint.close()
 
@@ -336,8 +341,12 @@ async def test_shared_specialist_isolates_two_orchestrators_concurrently() -> No
         payload_a = _direct_payload(events_a)
         payload_b = _direct_payload(events_b)
 
-        assert payload_a["effective_behavior"] == "structured-response"
-        assert payload_b["effective_behavior"] == "compact-response"
+        assert payload_a["local_behaviors"] == {
+            "specialist-mode-v1": "structured-response"
+        }
+        assert payload_b["local_behaviors"] == {
+            "specialist-mode-v1": "compact-response"
+        }
         assert payload_a["observed"] != payload_b["observed"]
     finally:
         await client_b.close()
@@ -366,10 +375,13 @@ async def test_no_allocation_request_after_treatment_returns_to_control() -> Non
             await _send(endpoint.client, text="control", envelope=None)
         )
 
-        assert treatment_payload["effective_behavior"] == "structured-response"
+        assert treatment_payload["local_behaviors"] == {
+            "specialist-mode-v1": "structured-response"
+        }
         assert control_payload["observed"] == []
         assert control_payload["materialized"] == []
-        assert control_payload["effective_behavior"] == "control"
+        assert control_payload["local_behaviors"] == {}
+        assert control_payload["default_behavior"] == "control"
     finally:
         await endpoint.close()
 
@@ -395,9 +407,9 @@ async def test_task_continuation_requires_explicit_context_resend() -> None:
         task_events = [event.task for event in first_events if event.HasField("task")]
         assert task_events
         task_id = task_events[0].id
-        assert _last_status_payload(first_events)["effective_behavior"] == (
-            "structured-response"
-        )
+        assert _last_status_payload(first_events)["local_behaviors"] == {
+            "specialist-mode-v1": "structured-response"
+        }
 
         without_context = await _send(
             endpoint.client,
@@ -407,7 +419,9 @@ async def test_task_continuation_requires_explicit_context_resend() -> None:
             streaming=True,
             task_id=task_id,
         )
-        assert _last_status_payload(without_context)["effective_behavior"] == "control"
+        without_context_payload = _last_status_payload(without_context)
+        assert without_context_payload["local_behaviors"] == {}
+        assert without_context_payload["default_behavior"] == "control"
 
         with_context_again = await _send(
             endpoint.client,
@@ -422,9 +436,9 @@ async def test_task_continuation_requires_explicit_context_resend() -> None:
             if event.HasField("status_update")
         ]
         assert completed_updates[-1].status.state == TaskState.TASK_STATE_COMPLETED
-        assert _last_status_payload(with_context_again)["effective_behavior"] == (
-            "structured-response"
-        )
+        assert _last_status_payload(with_context_again)["local_behaviors"] == {
+            "specialist-mode-v1": "structured-response"
+        }
     finally:
         await endpoint.close()
 
@@ -476,6 +490,9 @@ async def test_second_a2a_hop_forwards_allocations_without_transitive_ownership(
                 "treatment": "structured",
             }
         ]
+        assert payload["local_behaviors"] == {
+            "specialist-mode-v1": "structured-response"
+        }
         downstream = payload["downstream"]
         assert downstream["materialized"] == [
             {"experiment_id": "second-hop-mode-v1", "treatment": "v2"}
@@ -490,7 +507,9 @@ async def test_second_a2a_hop_forwards_allocations_without_transitive_ownership(
                 "treatment": "structured",
             },
         ]
-        assert downstream["effective_behavior"] == "second-hop-v2"
+        assert downstream["local_behaviors"] == {
+            "second-hop-mode-v1": "second-hop-v2"
+        }
     finally:
         await shared.close()
         await second.close()
