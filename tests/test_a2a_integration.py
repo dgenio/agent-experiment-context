@@ -430,7 +430,8 @@ async def test_task_continuation_requires_explicit_context_resend() -> None:
 
 
 @pytest.mark.asyncio
-async def test_second_a2a_hop_forwards_allocations_without_transitive_ownership() -> None:
+async def test_second_a2a_hop_forwards_allocations_without_transitive_ownership(
+) -> None:
     second = _endpoint(
         "Second Specialist",
         LocalExperimentRegistry(
