@@ -70,7 +70,33 @@ def test_local_registry_is_the_materialization_boundary() -> None:
     assert evidence.observed == envelope.allocations
     assert evidence.materialized == (envelope.allocations[1],)
     assert evidence.ignored == (envelope.allocations[0],)
-    assert evidence.effective_behavior == "structured-response"
+    assert dict(evidence.local_behaviors) == {
+        "specialist-mode-v1": "structured-response"
+    }
+    assert evidence.default_behavior == "control"
+
+
+def test_multiple_local_experiments_do_not_get_last_write_wins_semantics() -> None:
+    registry = LocalExperimentRegistry(
+        "shared-specialist",
+        {
+            "specialist-mode-v1": {"structured": "structured-response"},
+            "specialist-retrieval-v2": {"hybrid": "hybrid-retrieval"},
+        },
+    )
+    envelope = ExperimentEnvelope.from_pairs(
+        ("specialist-mode-v1", "structured"),
+        ("specialist-retrieval-v2", "hybrid"),
+    )
+
+    evidence = registry.evaluate(envelope)
+
+    assert evidence.materialized == envelope.allocations
+    assert dict(evidence.local_behaviors) == {
+        "specialist-mode-v1": "structured-response",
+        "specialist-retrieval-v2": "hybrid-retrieval",
+    }
+    assert evidence.ignored == ()
 
 
 def test_unknown_treatment_is_inert() -> None:
@@ -85,4 +111,5 @@ def test_unknown_treatment_is_inert() -> None:
 
     assert evidence.materialized == ()
     assert len(evidence.ignored) == 1
-    assert evidence.effective_behavior == "control"
+    assert evidence.local_behaviors == ()
+    assert evidence.default_behavior == "control"
