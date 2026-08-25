@@ -5,7 +5,7 @@ description = "Falsification experiments for scoped experiment context in compos
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "a2a-sdk[grpc,http-server]==1.0.0",
+  "a2a-sdk[grpc,http-server]==1.1.3",
   "httpx>=0.28.1",
 ]
 
