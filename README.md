@@ -45,6 +45,16 @@ The first falsification run against A2A Python 1.0.0 also surfaced a historical 
 
 See [`docs/a2a-experiment-allocation-extension-v1.md`](docs/a2a-experiment-allocation-extension-v1.md) for the experimental extension contract and [`docs/issue-7-results.md`](docs/issue-7-results.md) for the evidence/decision record.
 
+## OpenTelemetry HTTP experiment (#2)
+
+The follow-up experiment sends the same minimal `experiment_id`/`treatment` pairs through W3C Baggage across real spawned HTTP processes. Each process uses `LocalExperimentRegistry` to decide which exact pairs can materialize locally.
+
+The tests cover trace continuity, multi-hop Baggage propagation, local-only materialization, unknown IDs, unknown treatments, and the no-allocation control path. They also preserve the useful failure found during implementation: a new child span and extracted Baggage must be deliberately recomposed before downstream injection.
+
+This transport does not authenticate whether the sender is entitled to request a known treatment. Sender authentication and authorization remain separate from propagation and local materialization.
+
+See [`docs/otel-http-experiment.md`](docs/otel-http-experiment.md) for the boundary and evidence record. Install the optional `otel` extra when running only this experiment.
+
 ## Run
 
 ```bash
