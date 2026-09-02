@@ -15,8 +15,8 @@ from opentelemetry.trace import set_span_in_context
 from agent_experiment_context.otel_http import (
     ORCHESTRATOR_A_EXPERIMENT,
     PROPAGATOR,
-    QueueSpanExporter,
     SPECIALIST_EXPERIMENT,
+    QueueSpanExporter,
     context_with_wire_allocations,
     legacy_specialist_answer,
     run_orchestrator_server,
